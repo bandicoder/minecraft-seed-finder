@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SeedFinder — Minecraft Seed Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --green: #3fb950;
+    --green-dim: #1a3a23;
+    --dirt: #8B5E3C;
+    --grass: #5a8a35;
+    --stone: #8a8a8a;
+    --accent: #58a6ff;
+    --text: #e6edf3;
+    --text-dim: #7d8590;
+    --border: #30363d;
+    --gold: #e3b341;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    background-image: 
+      repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(255,255,255,0.015) 31px, rgba(255,255,255,0.015) 32px),
+      repeating-linear-gradient(90deg, transparent, transparent 31px, rgba(255,255,255,0.015) 31px, rgba(255,255,255,0.015) 32px);
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 24px 40px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(22,27,34,0.95);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: var(--grass);
+    border-bottom: 6px solid var(--dirt);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    box-shadow: inset -4px -4px 0 rgba(0,0,0,0.3), inset 4px 4px 0 rgba(255,255,255,0.1);
+  }
+
+  h1 {
+    font-family: 'VT323', monospace;
+    font-size: 32px;
+    letter-spacing: 2px;
+    color: var(--green);
+    line-height: 1;
+  }
+
+  h1 span { color: var(--text-dim); font-size: 14px; display: block; font-family: 'Space Mono', monospace; letter-spacing: 0; margin-top: 2px; }
+
+  .main { max-width: 960px; margin: 0 auto; padding: 48px 24px; }
+
+  .seed-input-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .seed-input-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--grass), var(--green), var(--accent));
+  }
+
+  .seed-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .seed-row {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    font-size: 24px;
+    letter-spacing: 2px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus { border-color: var(--green); }
+  input[type="text"]::placeholder { color: var(--text-dim); }
+
+  .version-select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .version-select:focus { border-color: var(--green); }
+
+  .go-btn {
+    background: var(--green);
+    color: #0d1117;
+    border: none;
+    border-radius: 6px;
+    padding: 14px 28px;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .go-btn:hover { background: #56d364; }
+  .go-btn:active { transform: scale(0.97); }
+
+  .hint {
+    margin-top: 14px;
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .hint code {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+  }
+
+  /* Tool Grid */
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s, background 0.2s;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tool-card:hover {
+    border-color: var(--card-color, var(--green));
+    background: var(--surface2);
+    transform: translateY(-2px);
+  }
+
+  .tool-card .card-icon {
+    font-size: 28px;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .tool-card .card-name {
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    color: var(--card-color, var(--text));
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+
+  .tool-card .card-desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .tool-card .card-badge {
+    position: absolute;
+    top: 12px; right: 12px;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    background: var(--green-dim);
+    color: var(--green);
+    border-radius: 3px;
+    padding: 2px 6px;
+  }
+
+  .tool-card .open-arrow {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 11px;
+    color: var(--card-color, var(--green));
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .tool-card:hover .open-arrow { opacity: 1; }
+
+  /* Info section */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  @media (max-width: 600px) {
+    .info-grid { grid-template-columns: 1fr; }
+    .seed-row { flex-direction: column; }
+    header { padding: 16px 20px; }
+    .main { padding: 32px 16px; }
+  }
+
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+
+  .info-card h3 {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    color: var(--gold);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+
+  .info-card ul {
+    list-style: none;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 2;
+  }
+
+  .info-card ul li::before { content: '▸ '; color: var(--green); }
+
+  .seed-display {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    display: none;
+    word-break: break-all;
+  }
+
+  .seed-display.active { display: block; }
+  .seed-display span { color: var(--text-dim); font-size: 12px; display: block; font-family: 'Space Mono', monospace; margin-bottom: 4px; letter-spacing: 0; }
+
+  /* Popup overlay */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .overlay.active { display: flex; }
+
+  .popup {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    max-width: 480px;
+    width: 90%;
+    position: relative;
+  }
+
+  .popup::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+    background: var(--popup-color, var(--green));
+  }
+
+  .popup h2 {
+    font-family: 'VT323', monospace;
+    font-size: 28px;
+    margin-bottom: 8px;
+    color: var(--popup-color, var(--text));
+    letter-spacing: 1px;
+  }
+
+  .popup p {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+
+  .popup-links { display: flex; flex-direction: column; gap: 10px; }
+
+  .popup-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.2s, background 0.2s;
+    font-size: 13px;
+  }
+
+  .popup-link:hover {
+    border-color: var(--popup-color, var(--green));
+    background: var(--surface2);
+  }
+
+  .popup-link .link-icon { font-size: 20px; flex-shrink: 0; }
+  .popup-link .link-info { flex: 1; }
+  .popup-link .link-name { font-weight: 700; font-size: 13px; }
+  .popup-link .link-url { font-size: 10px; color: var(--text-dim); }
+  .popup-link .ext { font-size: 10px; color: var(--text-dim); }
+
+  .close-btn {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+
+  .close-btn:hover { color: var(--text); }
+
+  .no-seed-warning {
+    background: rgba(227, 179, 65, 0.1);
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 11px;
+    color: var(--gold);
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  .no-seed-warning.active { display: block; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 40px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-icon">🌱</div>
+  <div>
+    <h1>SEEDFINDER <span>Minecraft Seed Dashboard</span></h1>
+  </div>
+</header>
+
+<div class="main">
+
+  <div class="seed-input-section">
+    <div class="seed-label">Enter Your Seed</div>
+    <div class="seed-row">
+      <input type="text" id="seedInput" placeholder="e.g. -4172144997902289642" />
+      <select class="version-select" id="versionSelect">
+        <option value="1.21">Java 1.21</option>
+        <option value="1.20">Java 1.20</option>
+        <option value="1.19">Java 1.19</option>
+        <option value="1.18">Java 1.18</option>
+        <option value="BE">Bedrock</option>
+      </select>
+      <button class="go-btn" onclick="setSeed()">▶ SET SEED</button>
+    </div>
+    <div class="hint">
+      Find your seed in-game by typing <code>/seed</code> in chat.
+      The seed is saved and used to pre-fill all tools below.
+    </div>
+    <div class="seed-display" id="seedDisplay">
+      <span>Current seed</span>
+      <span id="seedDisplayValue"></span>
+    </div>
+  </div>
+
+  <div class="section-title">Find Locations & Structures</div>
+
+  <div class="tools-grid" id="toolsGrid">
+    <!-- Populated by JS -->
+  </div>
+
+  <div class="section-title">Reference & Tips</div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>⚔️ Early Game Priorities</h3>
+      <ul>
+        <li>Find a village for easy food & iron</li>
+        <li>Locate a cave for coal & stone</li>
+        <li>Spot a desert temple for loot</li>
+        <li>Find a shipwreck for buried treasure maps</li>
+        <li>Locate a ruined portal for gold & obsidian</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h3>🏆 Late Game Goals</h3>
+      <ul>
+        <li>Locate stronghold for The End portal</li>
+        <li>Find Ancient City for echo shards & Swift Sneak</li>
+        <li>Spot Woodland Mansion for Totem of Undying</li>
+        <li>Locate Bastion Remnant for Piglin Brutes</li>
+        <li>Find Trial Chamber for Mace & Breeze loot</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h3>💎 Best Mining Levels</h3>
+      <ul>
+        <li>Diamonds — Y: -58 to -59</li>
+        <li>Ancient Debris — Y: 15 (Nether)</li>
+        <li>Iron — Y: 15 or Y: 232</li>
+        <li>Gold — Y: -16 (Badlands: any)</li>
+        <li>Copper — Y: 47–48</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h3>🗺️ How Seeds Work</h3>
+      <ul>
+        <li>Seeds are 64-bit integers</li>
+        <li>Word seeds get hashed to a number</li>
+        <li>Java & Bedrock use different algorithms</li>
+        <li>Same seed ≠ same world across editions</li>
+        <li>Structure locations are deterministic</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  SeedFinder links to third-party tools. All world generation belongs to Mojang / Microsoft.<br>
+  Not affiliated with Minecraft or Mojang.
+</footer>
+
+<!-- Popup -->
+<div class="overlay" id="overlay" onclick="closePopup(event)">
+  <div class="popup" id="popup">
+    <button class="close-btn" onclick="closePopup()">✕</button>
+    <div id="popupContent"></div>
+  </div>
+</div>
+
+<script>
+const tools = [
+  {
+    id: 'biomes',
+    icon: '🌍',
+    name: 'Biome Map',
+    desc: 'See a full top-down map of every biome in your world — oceans, jungles, deserts, and more.',
+    color: '#3fb950',
+    links: [
+      {
+        name: 'Chunkbase Biome Finder',
+        icon: '🗺️',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/biome-finder#${seed}`,
+        note: 'Interactive biome map. Supports Java & Bedrock.'
+      }
+    ]
+  },
+  {
+    id: 'stronghold',
+    icon: '🏰',
+    name: 'Stronghold',
+    desc: 'Locate the nearest strongholds to find the End Portal and reach The End.',
+    color: '#a78bfa',
+    links: [
+      {
+        name: 'Chunkbase Stronghold Finder',
+        icon: '🔮',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/stronghold-finder#${seed}`,
+        note: 'Shows all stronghold rings. Precise coordinates.'
+      }
+    ]
+  },
+  {
+    id: 'village',
+    icon: '🏘️',
+    name: 'Villages',
+    desc: 'Find villages nearby — great for early iron, food, beds, and trading with villagers.',
+    color: '#e3b341',
+    links: [
+      {
+        name: 'Chunkbase Village Finder',
+        icon: '🏠',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/village-finder#${seed}`,
+        note: 'Shows all village types & locations.'
+      }
+    ]
+  },
+  {
+    id: 'dungeon',
+    icon: '🕳️',
+    name: 'Dungeons & Spawners',
+    desc: 'Find dungeons with mob spawners — great for XP farms and loot chests.',
+    color: '#f85149',
+    links: [
+      {
+        name: 'Chunkbase Dungeon Finder',
+        icon: '💀',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/dungeon-finder#${seed}`,
+        note: 'Locate all dungeon spawner rooms.'
+      }
+    ]
+  },
+  {
+    id: 'temple',
+    icon: '🏛️',
+    name: 'Temples & Monuments',
+    desc: 'Spot desert temples, jungle temples, ocean monuments, and witch huts.',
+    color: '#ffa657',
+    links: [
+      {
+        name: 'Desert Temple Finder',
+        icon: '🏜️',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/desert-temple-finder#${seed}`,
+        note: 'Desert pyramid loot locations.'
+      },
+      {
+        name: 'Jungle Temple Finder',
+        icon: '🌿',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/jungle-temple-finder#${seed}`,
+        note: 'Jungle temple trap puzzle locations.'
+      },
+      {
+        name: 'Ocean Monument Finder',
+        icon: '🌊',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/ocean-monument-finder#${seed}`,
+        note: 'Guardian farm & sponge locations.'
+      },
+      {
+        name: 'Witch Hut Finder',
+        icon: '🧙',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/witch-hut-finder#${seed}`,
+        note: 'Swamp witch hut farm spots.'
+      }
+    ]
+  },
+  {
+    id: 'nether',
+    icon: '🔥',
+    name: 'Nether Structures',
+    desc: 'Locate Nether Fortresses (blazes), Bastion Remnants (piglins), and more in the Nether.',
+    color: '#ff7b72',
+    links: [
+      {
+        name: 'Nether Fortress Finder',
+        icon: '🏯',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/nether-fortress-finder#${seed}`,
+        note: 'Blaze spawners & Nether wart.'
+      },
+      {
+        name: 'Bastion Remnant Finder',
+        icon: '🐷',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/bastion-remnant-finder#${seed}`,
+        note: 'Piglin loot & Lodestone chests.'
+      }
+    ]
+  },
+  {
+    id: 'ancient',
+    icon: '🏚️',
+    name: 'Ancient City',
+    desc: 'Find Ancient Cities deep underground — the only source of Swift Sneak and echo shards.',
+    color: '#58a6ff',
+    links: [
+      {
+        name: 'Chunkbase Ancient City Finder',
+        icon: '💠',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/ancient-city-finder#${seed}`,
+        note: '1.19+ Java & Bedrock supported.'
+      }
+    ]
+  },
+  {
+    id: 'slime',
+    icon: '🟢',
+    name: 'Slime Chunks',
+    desc: 'Find slime chunks to build a slime farm — essential for sticky pistons and slime blocks.',
+    color: '#56d364',
+    links: [
+      {
+        name: 'Chunkbase Slime Finder',
+        icon: '🧪',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/slime-finder#${seed}`,
+        note: 'Highlights all slime-spawning chunks.'
+      }
+    ]
+  },
+  {
+    id: 'buried',
+    icon: '💰',
+    name: 'Buried Treasure',
+    desc: 'Skip the treasure map hunt — locate buried chests with hearts of the sea and rare loot.',
+    color: '#e3b341',
+    links: [
+      {
+        name: 'Chunkbase Buried Treasure Finder',
+        icon: '🗺️',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/buried-treasure-finder#${seed}`,
+        note: 'Always at chunk coordinate (9, ?, 9).'
+      }
+    ]
+  },
+  {
+    id: 'spawn',
+    icon: '🌟',
+    name: 'Spawn & Seed Info',
+    desc: 'View your exact world spawn coordinates and general seed analysis.',
+    color: '#79c0ff',
+    links: [
+      {
+        name: 'Chunkbase App Hub',
+        icon: '🔍',
+        url: (seed, ver) => `https://www.chunkbase.com/apps/`,
+        note: 'Full list of all Chunkbase seed tools.'
+      },
+      {
+        name: 'MineAtlas',
+        icon: '🗾',
+        url: (seed, ver) => `http://mineatlas.com/?seedInput=${seed}`,
+        note: 'Older tool, great for legacy seeds (1.17 and below).'
+      }
+    ]
+  }
+];
+
+let currentSeed = '';
+let currentVersion = '1.21';
+
+function setSeed() {
+  const input = document.getElementById('seedInput').value.trim();
+  const version = document.getElementById('versionSelect').value;
+  if (!input) {
+    document.getElementById('seedInput').style.borderColor = '#f85149';
+    setTimeout(() => document.getElementById('seedInput').style.borderColor = '', 1500);
+    return;
+  }
+  currentSeed = input;
+  currentVersion = version;
+  const display = document.getElementById('seedDisplay');
+  document.getElementById('seedDisplayValue').textContent = input + '  (v' + version + ')';
+  display.classList.add('active');
+}
+
+function buildTools() {
+  const grid = document.getElementById('toolsGrid');
+  grid.innerHTML = '';
+  tools.forEach(tool => {
+    const card = document.createElement('div');
+    card.className = 'tool-card';
+    card.style.setProperty('--card-color', tool.color);
+    card.innerHTML = `
+      <span class="card-icon">${tool.icon}</span>
+      <div class="card-name">${tool.name}</div>
+      <div class="card-desc">${tool.desc}</div>
+      <div class="open-arrow">Open tools →</div>
+    `;
+    card.addEventListener('click', () => openTool(tool));
+    grid.appendChild(card);
+  });
+}
+
+function openTool(tool) {
+  const warning = currentSeed ? '' : `<div class="no-seed-warning active">⚠ No seed set — links will open without a pre-filled seed. Enter your seed above first.</div>`;
+  
+  const linksHTML = tool.links.map(link => {
+    const url = link.url(encodeURIComponent(currentSeed || ''), currentVersion);
+    return `
+      <a class="popup-link" href="${url}" target="_blank" rel="noopener">
+        <span class="link-icon">${link.icon}</span>
+        <span class="link-info">
+          <span class="link-name">${link.name}</span>
+          <span class="link-url">${link.note}</span>
+        </span>
+        <span class="ext">↗</span>
+      </a>
+    `;
+  }).join('');
+
+  document.getElementById('popupContent').innerHTML = `
+    ${warning}
+    <h2>${tool.icon} ${tool.name}</h2>
+    <p>${tool.desc}</p>
+    <div class="popup-links">${linksHTML}</div>
+  `;
+  document.getElementById('popup').style.setProperty('--popup-color', tool.color);
+  document.getElementById('overlay').classList.add('active');
+}
+
+function closePopup(e) {
+  if (!e || e.target === document.getElementById('overlay') || e.currentTarget.classList.contains('close-btn')) {
+    document.getElementById('overlay').classList.remove('active');
+  }
+}
+
+document.getElementById('seedInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') setSeed();
+});
+
+buildTools();
+</script>
+</body>
+</html>
